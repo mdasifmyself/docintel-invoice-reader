@@ -1,0 +1,33 @@
+# secrets and local settings: never in Git
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# dependencies, build output and caches
+node_modules
+node_modules/
+.next/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.coverage
+htmlcov/
+
+# uploads, data volumes and generated data (re-create with dataset/generate.py)
+uploads/
+data/
+dataset/out/
+dataset/samples/
+evaluation/results/raw/
+
+# deploy stamp (written by deploy/deploy_server.sh)
+backend/app/BUILD_COMMIT
+
+.DS_Store

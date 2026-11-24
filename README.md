@@ -2,6 +2,8 @@
 
 DocIntel reads invoices and receipts and turns them into checked data.
 
+- **Case study:** https://asifmyself.xyz/case-studies/docintel-invoice-reader
+
 You upload files: PDFs, scans, phone photos, TIFF, Excel or CSV. DocIntel finds every invoice, pulls out the
 important values with AI, and **proves each value against the document**. It checks the maths, finds duplicates and
 differences between documents, and sends only the unsure cases to a person. Everything can be searched and exported

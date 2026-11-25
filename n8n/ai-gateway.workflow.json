@@ -2,7 +2,7 @@
   "name": "DocIntel | AI Gateway",
   "nodes": [
     {
-      "id": "e1be3583-47a0-4438-97a6-2ce9f78bae32",
+      "id": "d2f7dc85-3f4f-49a0-8b52-50ee0f46868b",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -26,7 +26,7 @@
       }
     },
     {
-      "id": "31c718da-d4a1-4d2c-b51a-4be37390d771",
+      "id": "f0e8a972-00c7-4f6d-b2df-9e0975870d33",
       "name": "Check request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "c3097c2f-529f-437f-878d-8cfcea3cc4c4",
+      "id": "51fb4c23-6029-45c5-8c4d-ce3d3bce32ce",
       "name": "Allowed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -57,7 +57,7 @@
           },
           "conditions": [
             {
-              "id": "e525bbec-7d61-4897-a932-829ae6d81643",
+              "id": "1234e25a-0343-4dfc-9b37-cb14f0b53682",
               "leftValue": "={{ $json.ok }}",
               "rightValue": "",
               "operator": {
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "6d12b223-01fb-49f5-aea1-4583b9ece494",
+      "id": "a2f81a38-7bbf-4b06-b30c-9575f308ee8b",
       "name": "Call OpenAI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -102,7 +102,7 @@
       }
     },
     {
-      "id": "da633b61-ea80-4741-93a0-beacaf7ad642",
+      "id": "85eea65f-2151-4100-9129-f9c0a017977f",
       "name": "Reply: result",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -119,7 +119,7 @@
       }
     },
     {
-      "id": "c8c8854e-ad15-4ff3-b784-e2f4f5f922c8",
+      "id": "521c2bd3-eea5-4f88-af90-b27e7f512b22",
       "name": "Reply: upstream error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -136,7 +136,7 @@
       }
     },
     {
-      "id": "aa6672cd-c261-4a06-965b-26041dfbdaa0",
+      "id": "70ffbe95-2463-486e-ae9c-594adf96614f",
       "name": "Reply: rejected",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -153,7 +153,7 @@
       }
     },
     {
-      "id": "f9f81669-ee01-41ba-a926-90e690ab0761",
+      "id": "07abbd25-36dc-45f3-9f0a-cca4be19a041",
       "name": "Note: DocIntel AI Gateway",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -166,6 +166,49 @@
         "width": 620,
         "height": 260
       }
+    },
+    {
+      "id": "0b016f18-a8d9-43dc-8ee4-40db43f93fd4",
+      "name": "Notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        580
+      ],
+      "parameters": {
+        "jsCode": "\n// OpenAI returned an error: tell the team. Only the error line is sent on, never document text.\nconst j = $input.first().json;\nreturn [{ json: { source: 'DocIntel \u00b7 AI gateway', title: 'AI request failed',\n                  detail: String((j.error && (j.error.message || j.error)) || 'Unknown error').slice(0, 200) } }];\n"
+      }
+    },
+    {
+      "id": "73d759d8-b238-4fa5-ae41-28decbaafe2b",
+      "name": "Tell the team",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        580
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_ALERTS_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -221,6 +264,22 @@
         [
           {
             "node": "Reply: upstream error",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notice": {
+      "main": [
+        [
+          {
+            "node": "Tell the team",
             "type": "main",
             "index": 0
           }

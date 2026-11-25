@@ -11,6 +11,8 @@ worker ──POST {op, payload} + X-DocIntel-Key──▶ n8n webhook ──▶ 
   rejected with 400.
 * **Privacy:** `store: false` is forced on every response request; successful and failed executions are not saved in n8n.
 * **Limits:** payloads over 6 MB are rejected (page images are sent as compressed JPEG).
+* **Alerts (optional):** with `alerts_workflow.json` (the id of a separate alerts workflow) in the settings folder, an
+  OpenAI error or a crashed run sends the team a short message: the error line only, never document text.
 
 Files:
 

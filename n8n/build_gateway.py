@@ -106,7 +106,16 @@ def sticky(title, body, pos, w, h):
                 {"content": f"## {title}\n{body}", "width": w, "height": h})
 
 
-def build(hook_cred, openai_cred):
+NOTICE_JS = r"""
+// OpenAI returned an error: tell the team. Only the error line is sent on, never document text.
+const j = $input.first().json;
+return [{ json: { source: 'DocIntel · AI gateway', title: 'AI request failed',
+                  detail: String((j.error && (j.error.message || j.error)) || 'Unknown error').slice(0, 200) } }];
+"""
+
+
+def build(hook_cred, openai_cred, alerts=None):
+    """alerts: optional id of a separate alerts workflow (it sends the team a Telegram message)."""
     y = 300
     nodes = [
         node("Webhook", "n8n-nodes-base.webhook", [0, y],
@@ -141,23 +150,37 @@ def build(hook_cred, openai_cred):
     links = [c("Webhook", "Check request"), c("Check request", "Allowed?"), c("Allowed?", "Call OpenAI"),
              c("Allowed?", "Reply: rejected", 1), c("Call OpenAI", "Reply: result"),
              c("Call OpenAI", "Reply: upstream error", 1)]
+    if alerts:
+        nodes += [
+            node("Notice", "n8n-nodes-base.code", [920, y + 280], {"jsCode": NOTICE_JS}, 2),
+            node("Tell the team", "n8n-nodes-base.executeWorkflow", [1160, y + 280],
+                 {"workflowId": {"__rl": True, "value": alerts, "mode": "id"},
+                  "workflowInputs": {"mappingMode": "defineBelow", "value": {}, "matchingColumns": [], "schema": [],
+                                     "attemptToConvertTypes": False, "convertFieldsToString": True},
+                  "mode": "once", "options": {"waitForSubWorkflow": False}}, 1.2, onError="continueRegularOutput"),
+        ]
+        links += [c("Call OpenAI", "Notice", 1), c("Notice", "Tell the team")]
     connections = {}
     for a, b, i in links:
         outs = connections.setdefault(a, {"main": []})["main"]
         while len(outs) <= i:
             outs.append([])
         outs[i].append({"node": b, "type": "main", "index": 0})
-    return {"name": NAME, "nodes": nodes, "connections": connections,
-            "settings": {"executionOrder": "v1", "saveDataSuccessExecution": "none",
-                         "saveDataErrorExecution": "none", "saveManualExecutions": False,
-                         "executionTimeout": 150}}
+    settings = {"executionOrder": "v1", "saveDataSuccessExecution": "none", "saveDataErrorExecution": "none",
+                "saveManualExecutions": False, "executionTimeout": 150}
+    if alerts:
+        settings["errorWorkflow"] = alerts
+    return {"name": NAME, "nodes": nodes, "connections": connections, "settings": settings}
 
 
 def export(wf):
     clean = json.loads(json.dumps(wf))
+    clean["settings"].pop("errorWorkflow", None)
     for n in clean["nodes"]:
         for k in n.get("credentials", {}):
             n["credentials"][k] = {"id": "REPLACE_ME", "name": f"<your {k} credential>"}
+        if n["type"] == "n8n-nodes-base.executeWorkflow":
+            n["parameters"]["workflowId"]["value"] = "REPLACE_WITH_ALERTS_WORKFLOW_ID"
     out = ROOT / "ai-gateway.workflow.json"
     out.write_text(json.dumps(clean, indent=2) + "\n")
     print("exported", out.relative_to(ROOT.parent))
@@ -165,7 +188,9 @@ def export(wf):
 
 def main():
     openai_cred = json.loads(cfg("openai_credential.json"))
-    wf = build(header_credential(), openai_cred)
+    alerts_file = CFG / "alerts_workflow.json"       # optional
+    alerts = json.loads(alerts_file.read_text())["id"] if alerts_file.exists() else None
+    wf = build(header_credential(), openai_cred, alerts)
     existing = find_workflow(NAME)
     if existing:
         api("POST", f"/workflows/{existing['id']}/deactivate")

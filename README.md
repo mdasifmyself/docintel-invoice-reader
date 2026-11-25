@@ -2,6 +2,7 @@
 
 DocIntel reads invoices and receipts and turns them into checked data.
 
+- **Live:** https://docintel.asifmyself.xyz (a shared test space with sample invoices; please upload nothing private)
 - **Case study:** https://asifmyself.xyz/case-studies/docintel-invoice-reader
 
 You upload files: PDFs, scans, phone photos, TIFF, Excel or CSV. DocIntel finds every invoice, pulls out the
